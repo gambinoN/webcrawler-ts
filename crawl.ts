@@ -1,5 +1,24 @@
 const { JSDOM } = require('jsdom');
 
+export async function crawlPage(url: string) {
+  try {
+    const resp = await fetch(url)
+    if(resp.status > 299) {
+      console.error(`Failed to fetch page: ${resp.statusText}`);
+      return;
+    }
+    const contentType = resp.headers.get('content-type');
+    if (!contentType || !contentType.includes('text/html')) {
+      console.error('Page is not HTML');
+      return;
+    }
+    const html = await resp.text();
+    console.log(html)
+  } catch (e: any) {
+    console.error(e.message);
+  }
+}
+
 export function getURLsFromHtml(html: string, baseUrl: string) {
   const urls: Array<string> = [];
   const dom = new JSDOM(html);
