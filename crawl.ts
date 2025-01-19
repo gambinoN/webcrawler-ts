@@ -1,6 +1,20 @@
 const { JSDOM } = require('jsdom');
 
-export async function crawlPage(url: string) {
+export async function crawlPage(url: string, currentUrl: string, visited: Set<string | undefined>) {
+  const baseUrlObj = new URL(url);
+  const currentUrlObj = new URL(currentUrl);
+  if (baseUrlObj.hostname !== currentUrlObj.hostname) {
+    console.error('Cannot crawl external links');
+    return visited;
+  }
+
+  const normalizedCurrentUrl = normalizeUrl(currentUrl);
+  if (visited.has(normalizedCurrentUrl)) {
+    return visited;
+  }
+
+  visited.add(normalizedCurrentUrl);
+
   try {
     const resp = await fetch(url)
     if(resp.status > 299) {
@@ -13,10 +27,16 @@ export async function crawlPage(url: string) {
       return;
     }
     const html = await resp.text();
-    console.log(html)
+
+    const nextUrls = getURLsFromHtml(html, url);
+    for (const nextUrl of nextUrls) {
+      visited = await crawlPage(nextUrl, url, visited) || visited;
+    }
   } catch (e: any) {
     console.error(e.message);
   }
+
+  return visited;
 }
 
 export function getURLsFromHtml(html: string, baseUrl: string) {
